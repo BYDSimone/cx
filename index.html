@@ -44,6 +44,7 @@ nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--
 select,input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
 textarea{width:100%;min-height:70px;resize:vertical}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.btn{display:inline-flex;align-items:center;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;border-radius:8px;cursor:pointer}
 button.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;border-radius:8px;cursor:pointer}
 button.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 3px 14px rgba(44,146,213,.3)}
 button.btn.pri:hover{background:#1e7bc0}
@@ -127,6 +128,12 @@ aside.panel{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);backgrou
 .ai-item:first-child{border-top:0;padding-top:0}
 .note{font-size:.85rem;color:var(--muted)}
 .status-line{font-size:.82rem;color:var(--muted)}
+.chip.alerta{background:#ffe1dc;color:#b42318;font-weight:800;border:1px solid #f3b4ad}
+tr.fila-alerta td{background:#fff6f5}
+.kpi.kpi-alerta{border-color:#f3b4ad;background:#fff6f5}.kpi.kpi-alerta b{color:var(--bad)}
+.aviso-pv{font:inherit;text-align:left;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid #f3b4ad;background:#fff6f5;color:#b42318;border-radius:var(--r);padding:12px 14px;cursor:pointer}
+.aviso-pv span{margin-left:auto;font-weight:700}
+table.precios td{white-space:nowrap}.precio-in{width:110px;text-align:right}
 .segtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .segtabs button{font:inherit;text-align:left;display:grid;gap:2px;padding:12px 16px;border-radius:var(--r);border:2px solid var(--line);background:var(--surface);cursor:pointer;color:var(--muted)}
 .segtabs button b{font-size:1.05rem;color:var(--fg)}
@@ -208,7 +215,7 @@ const SUCURSALES_DEF = ["La Plata","Mar del Plata","Brandsen"];
 const VENDEDORES_DEF = ["Tomas Passi","Lucas Alvarez","Renata Vacca","Alexis Roda","Marcos Gonzalez","Joshua Casnati","Federico Colma","Laureano Gallaratti","Malena Barrios","Tomas Galzerano","Daniel Errecalde","Gaston Hasperue","Ornela Sturlese","Alejandra Gutierrez"];
 const ENTREGADORES_DEF = ["Deborah Opazo","Marcos Mineses","Ramiro Gutierrez","Lucia Bonicelli"];
 const CRM_EST = ["ENTREGADO","VIN CRUZADO","PARA ASIGNAR","SIN PATENTE"];
-const MODELOS_DEF = ["Dolphin Mini GS","Dolphin Mini GL","Atto2 GS","Song Pro GS","Song Pro GL","Yuan Pro GS","Yuan Pro GL","Seal U","Shark","Ti7"];
+const MODELOS_DEF = ["Dolphin Mini GS","Dolphin Mini GL","Atto2 GS","Song Pro GS","Song Pro GL","Yuan Pro GS","Yuan Pro GL","Seal U","Seal 5","Shark","Ti7"];
 const TEMAS = ["App y conectividad","Carga y cargadores","Faltantes y accesorios","Estado del vehículo","Documentación y patente","Atención y entrega","Otros"];
 const STAGES = [{k:"d3",n:3,end:7,label:"Día 3",unit:"día"},{k:"d7",n:7,end:28,label:"Día 7",unit:"día"},{k:"d28",n:28,end:30,label:"Día 28",unit:"día"}];
 const SEMS = [6,12,18,24].map(n=>({k:"m"+n,n,label:n+" meses",unit:"meses",sem:true}));
@@ -218,13 +225,13 @@ const TIPOS_SVC = ["Service programado","Reparación","Garantía","Chapa y pintu
 const ESTADOS = {pendiente:"Pendiente",contactado:"Contactado",sin_respuesta:"Sin respuesta",no_corresponde:"No corresponde"};
 
 const ROLES = {admin:"Administración",recepcion:"Recepción / seguimientos",entregas:"Entregas",servicio:"Servicio (asesores)",ventas:"Ventas"};
-const S = { tab:"hoy", suc:"", entregas:new Map(), encuestas:new Map(), historico:[], byd:new Map(), bydMes:"", services:new Map(), turnos:new Map(), ag:{vista:"semana"}, pvView:"agenda", encPv:new Map(), encPvRaw:new Map(), bydPv:new Map(), bydPvMes:"", encTipo:"ventas", config:{}, db:null, user:null, myId:null, isAdmin:false, sample:null, loaded:false, canWrite:true, filtroHoy:"", q:"", repPeriodo:"90", ai:null };
+const S = { tab:"hoy", suc:"", entregas:new Map(), encuestas:new Map(), historico:[], byd:new Map(), bydMes:"", services:new Map(), turnos:new Map(), precios:new Map(), ag:{vista:"semana"}, pvView:"agenda", encPv:new Map(), encPvRaw:new Map(), bydPv:new Map(), bydPvMes:"", encTipo:"ventas", config:{}, db:null, user:null, myId:null, isAdmin:false, sample:null, loaded:false, canWrite:true, filtroHoy:"", q:"", repPeriodo:"90", ai:null };
 try{ const t=localStorage.getItem("cx.tab"); if(t) S.tab=t; S.suc=localStorage.getItem("cx.suc")||""; }catch(e){}
 if(location.hash && ["hoy","entregas","service","encuestas","reportes","config","movimientos"].includes(location.hash.slice(1))) S.tab=location.hash.slice(1);
 
 /* ---------- helpers ---------- */
 const sucursales = () => S.config.sucursales?.length ? S.config.sucursales : SUCURSALES_DEF;
-const modelos = () => { const l=S.config.modelos?.length ? S.config.modelos : MODELOS_DEF; return l.some(x=>/ti\s?7/i.test(x)) ? l : [...l,"Ti7"]; };
+const modelos = () => { const l=S.config.modelos?.length ? S.config.modelos : MODELOS_DEF; let r=l.some(x=>/ti\s?7/i.test(x)) ? l : [...l,"Ti7"]; if(!r.some(x=>/seal\s?5/i.test(x))) r=[...r,"Seal 5"]; return r; };
 const vendedoresL = () => S.config.vendedores?.length ? S.config.vendedores : VENDEDORES_DEF;
 const entregadoresL = () => S.config.entregadores?.length ? S.config.entregadores : ENTREGADORES_DEF;
 const LISTAS = {modelos:[()=>modelos(),"Nuevo modelo, ej: Seal 7"],sucursales:[()=>sucursales(),"Nueva sucursal"],vendedores:[()=>vendedoresL(),"Nombre y apellido"],entregadores:[()=>entregadoresL(),"Nombre y apellido"]};
@@ -276,7 +283,7 @@ function allProblems(e){ const out=[]; for(const st of (e.fechaCierre?[S48]:ALLS
 function visible(){ return [...S.entregas.values()].filter(e=>!S.suc || e.sucursal===S.suc); }
 function visibleSvc(){ return [...S.services.values()].filter(e=>!S.suc || e.sucursal===S.suc); }
 function svcSurvey(v){ const vin=cleanVin(v.vin); if(vin.length<11) return null; let best=null; for(const s of S.encPv.values()){ if(cleanVin(s.vin)!==vin) continue; if(s.orden && v.orden && String(s.orden).replace(/\W/g,"")!==String(v.orden).replace(/\W/g,"")) continue; const fs=s.fecha||s.activacion; if(fs && (fs<v.fechaCierre || fs>addDays(v.fechaCierre,75))) continue; if(!best || (best.nps==null&&s.nps!=null) || ((s.nps!=null)===(best.nps!=null) && (fs||"")<(best.fecha||best.activacion||""))) best=s; } return best; }
-function svcEstado(v,today=todayISO()){ const sv=svcSurvey(v); const recibe=addDays(v.fechaCierre,3), cierra=addDays(recibe,60); if(sv && sv.nps!=null) return {k:"respondio",sv}; if(today>=recibe) return {k:"no_respondio",sv,recibe,cierra,abierta:today<=cierra,dias:diffDays(cierra,today)}; return {k:"pendiente",sv,recibe,dias:diffDays(recibe,today)}; }
+function svcEstado(v,today=todayISO()){ const sv=svcSurvey(v); const recibe=(sv&&sv.activacion&&sv.activacion>=v.fechaCierre)?sv.activacion:addDays(v.fechaCierre,3), cierra=addDays(recibe,VIG_PV); if(sv && sv.nps!=null) return {k:"respondio",sv}; if(today>=recibe) return {k:"no_respondio",sv,recibe,cierra,abierta:today<=cierra,dias:diffDays(cierra,today)}; return {k:"pendiente",sv,recibe,dias:diffDays(recibe,today)}; }
 function surveyFor(e){ return e.vin ? S.encuestas.get(cleanVin(e.vin)) : null; }
 function npsCls(n){ return n==null?"":n>=9?"ok":n>=7?"warn":"bad"; }
 function npsLabel(n){ return n==null?"":n>=9?"Promotor":n>=7?"Pasivo":"Detractor"; }
@@ -344,6 +351,7 @@ async function startApp(session){
   db.collection("encuestas").onSnapshot(snap=>{ S.encRaw=new Map(snap.docs.map(d=>[d.id,d.data()])); mergeEnc(); if(S.loaded) render(); }, ()=>{});
   db.collection("byd").onSnapshot(snap=>{ S.byd=new Map(snap.docs.map(d=>[d.id,d.data()])); mergeEnc(); if(S.loaded) render(); }, ()=>{});
   db.collection("services").onSnapshot(snap=>{ S.services=new Map(snap.docs.map(d=>[d.id,{...d.data(),_id:d.id}])); if(S.loaded) render(); }, ()=>{});
+  db.collection("precios").onSnapshot(snap=>{ S.precios=new Map(snap.docs.map(d=>[d.id,d.data()])); if(S.loaded) render(); }, ()=>{});
   db.collection("turnos").onSnapshot(snap=>{ S.turnos=new Map(snap.docs.map(d=>[d.id,{...d.data(),_id:d.id}])); if(S.loaded) render(); }, ()=>{});
   db.collection("encuestas_pv").onSnapshot(snap=>{ S.encPvRaw=new Map(snap.docs.map(d=>[d.id,d.data()])); mergeEncPv(); if(S.loaded) render(); }, ()=>{});
   db.collection("byd_pv").onSnapshot(snap=>{ S.bydPv=new Map(snap.docs.map(d=>[d.id,d.data()])); mergeEncPv(); if(S.loaded) render(); }, ()=>{});
@@ -461,7 +469,9 @@ function renderHoy(m){
   const cntSt=k=>sems.filter(x=>x.st.k===k).length;
   const pchip=(k,l,n)=>`<button class="pvf ${pf===k?"on":""}" data-pvf="${k}"><b>${n}</b><span>${l}</span></button>`;
   const vencN=a=>a.filter(x=>x.i.status==="vencido").length;
+  const nPV=porVencer().length;
   const pvHtml=`<div class="pvzone">
+  ${nPV?`<button class="aviso-pv" id="hoyPorVencer">⏰ <b>${nPV} encuesta${nPV>1?"s":""} de posventa vence${nPV>1?"n":""} en los próximos ${AVISO_PV} días.</b> <span>Ver listado →</span></button>`:""}
   <div class="pvfiltros">
     ${pchip("","Todos",svcs.length+sems.length)}
     ${pchip("s48","48 h después del taller",svcs.length)}
@@ -484,6 +494,7 @@ function renderHoy(m){
   ${tipo==="pv"?pvHtml:ventasHtml}`;
   $("#fEtapa")?.addEventListener("change",ev=>{S.filtroHoy=ev.target.value; render();});
   m.querySelectorAll("[data-ht]").forEach(b=>b.onclick=()=>{S.hoyTipo=b.dataset.ht; render();});
+  $("#hoyPorVencer")?.addEventListener("click",irPorVencer);
   m.querySelectorAll("[data-pvf]").forEach(b=>b.onclick=()=>{S.pvF=b.dataset.pvf; render();});
   $("#pvVen")?.addEventListener("change",ev=>{S.pvVen=ev.target.value==="todo"?"todo":Number(ev.target.value); render();});
   const qi=$("#hoyQ"); qi.oninput=()=>{S.hoyQ=qi.value; const pos=qi.selectionStart; render(); const n=$("#hoyQ"); n.focus(); n.setSelectionRange(pos,pos);};
@@ -570,7 +581,7 @@ function openFicha(id, focusStage){
     ${STAGES.map(st=>segBlock(e,st)).join("")}
     <h3 style="margin-top:6px">Posventa · contactos semestrales</h3>
     ${SEMS.map(st=>segBlock(e,st)).join("")}
-    ${(()=>{ const sv=[...S.services.values()].filter(x=>e.vin&&cleanVin(x.vin)===cleanVin(e.vin)).sort((a,b)=>b.fechaCierre.localeCompare(a.fechaCierre)); return `<div class="seg"><div class="seg-h"><h3>Services en el taller</h3><span class="chip">${sv.length}</span></div>${sv.length?`<div class="list">${sv.map(x=>{const se=svcEstado(x); return `<div class="row" data-svc="${esc(x._id)}" tabindex="0"><div class="stage" style="width:auto;padding:0 8px">${fmt(x.fechaCierre)}</div><div class="who"><b>${esc(x.tipo||"")}</b><div class="meta">${x.orden?`<span>OR ${esc(x.orden)}</span>`:""}${x.factura?`<span>${esc(x.factura)}</span>`:""}${x.km?`<span>${esc(x.km)} km</span>`:""}<span>${esc(x.asesor||"")}</span></div></div><div class="end">${se.k==="respondio"?`<span class="chip ${npsCls(se.sv.nps)}">NPS ${se.sv.nps}</span>`:""}</div></div>`;}).join("")}</div>`:`<div class="note">Todavía no hay services cargados para este VIN.</div>`}</div>`; })()}
+    ${(()=>{ const sv=[...S.services.values()].filter(x=>e.vin&&cleanVin(x.vin)===cleanVin(e.vin)).sort((a,b)=>b.fechaCierre.localeCompare(a.fechaCierre)); return `<div class="seg"><div class="seg-h"><h3>Services en el taller</h3><span class="chip">${sv.length}</span></div>${sv.length?`<div class="list">${sv.map(x=>{const se=svcEstado(x); return `<div class="row" data-svc="${esc(x._id)}" tabindex="0"><div class="stage" style="width:auto;padding:0 8px">${fmt(x.fechaCierre)}</div><div class="who"><b>${esc(x.tipo||"")}</b><div class="meta">${x.orden?`<span>OR ${esc(x.orden)}</span>`:""}${x.factura?`<span>${esc(x.factura)}</span>`:""}${x.precio!=null?`<span>${ARS(x.precio)}</span>`:""}${x.km?`<span>${esc(x.km)} km</span>`:""}<span>${esc(x.asesor||"")}</span></div></div><div class="end">${se.k==="respondio"?`<span class="chip ${npsCls(se.sv.nps)}">NPS ${se.sv.nps}</span>`:""}</div></div>`;}).join("")}</div>`:`<div class="note">Todavía no hay services cargados para este VIN.</div>`}</div>`; })()}
     <datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
     <label class="fld">Notas generales del cliente<textarea name="notas" id="f-notas">${esc(e.notas||"")}</textarea></label>
     <div class="toolbar"><button class="btn pri" type="submit" ${S.canWrite?"":"disabled"}>Guardar cambios</button><span class="status-line">${e.actualizado?`Última modificación ${new Date(e.actualizado).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"})}`:""}</span></div>
@@ -729,6 +740,7 @@ function buscarCliente(q){
   return {entrega:e||null, vin:e?.vin||v?.vin||"", patente:v?.patente||e?.patente||"", cliente:e?.cliente||v?.cliente||"", telefono:e?.telefono||v?.telefono||"", modelo:e?.modelo||v?.modelo||"", sucursal:v?.sucursal||e?.sucursal||""};
 }
 function renderService(m){
+  if(S.pvView==="precios") return renderPrecios(m);
   if(S.pvView!=="egresos") return renderAgenda(m);
   const q=(S.svcQ||"").toLowerCase(), tdy=todayISO(), pf=S.svcPer||"", pv=pf==="mes"?(S.svcMes||tdy.slice(0,7)):pf==="dia"?(S.svcDia||tdy):"";
   const arr=visibleSvc().filter(v=>!pf||(pf==="mes"?v.fechaCierre.slice(0,7)===pv:v.fechaCierre===pv)).filter(v=>!q||[v.cliente,v.vin,v.patente,v.orden,v.telefono].some(x=>String(x||"").toLowerCase().includes(q))).sort((a,b)=>b.fechaCierre.localeCompare(a.fechaCierre)||String(b.creado||"").localeCompare(String(a.creado||"")));
@@ -812,7 +824,7 @@ function openService(id){
       <div><span>Patente</span><span class="mono" style="font-size:.9rem;color:var(--fg);text-transform:none;letter-spacing:0">${esc(v.patente||"—")}</span></div>
       <div><span>VIN</span><span class="mono" style="font-size:.85rem;color:var(--fg);text-transform:none;letter-spacing:0">${esc(v.vin||"—")}</span></div>
       <div><span>Teléfono</span><span class="mono" style="font-size:.9rem;color:var(--fg);text-transform:none;letter-spacing:0">${esc(v.telefono||"—")}</span></div>
-      <div><span>Modelo</span>${esc(v.modelo||"—")}</div><div><span>Sucursal</span>${esc(v.sucursal||"—")}</div>${v.km?`<div><span>Km</span>${esc(v.km)}</div>`:""}${v.asesor?`<div><span>Asesor</span>${esc(v.asesor)}</div>`:""}${v.tecnico?`<div><span>Técnico</span>${esc(v.tecnico)}</div>`:""}
+      <div><span>Modelo</span>${esc(v.modelo||"—")}</div><div><span>Sucursal</span>${esc(v.sucursal||"—")}</div>${v.km?`<div><span>Km</span>${esc(v.km)}</div>`:""}${v.asesor?`<div><span>Asesor</span>${esc(v.asesor)}</div>`:""}${v.tecnico?`<div><span>Técnico</span>${esc(v.tecnico)}</div>`:""}${v.precio!=null?`<div><span>Precio acordado</span>${ARS(v.precio)}</div>`:""}
     </div>
     ${v.telefono?`<div class="toolbar"><button class="btn sm" id="cpTel">Copiar teléfono</button></div>`:""}
     <div class="seg"><div class="seg-h"><h3>Encuesta de posventa BYD</h3>${se.k==="respondio"?`<span class="chip ${npsCls(sv.nps)}">${sv.nps} · ${npsLabel(sv.nps)}</span>`:se.k==="pendiente"?`<span class="chip">Le llega el ${fmt(se.recibe)}</span>`:`<span class="chip ${se.abierta?"warn":"bad"}">${se.abierta?"No respondió · cierra en "+se.dias+" días":"No respondió · vencida"}</span>`}</div>${sv?.comentario?`<div>${esc(sv.comentario)}</div>`:""}</div>
@@ -872,10 +884,10 @@ const TALLER_DEF = {
   asesores:["Matías Argibay","Sergio Ramirez"],
   horario:{inicio:"08:00",fin:"16:30"},
   atienden:["Matías Argibay","Marcos","Ramiro","Sebastián"],
-  pautaModelo:{"Dolphin":[1.5,1.5],"Yuan":[1.5,1.5],"Song Pro DMI":[2,2],"Atto 2":[2,2],"Shark":[2,3],"Seal U DMI":[2,2],"Ti7":[2,2]},
+  pautaModelo:{"Dolphin":[1.5,1.5],"Yuan":[1.5,1.5],"Song Pro DMI":[2,2],"Atto 2":[2,2],"Shark":[2,3],"Seal U DMI":[2,2],"Seal 5":[2,2],"Ti7":[2,2]},
   pautaTrabajo:{"Diagnóstico Eléctrico":1.5,"Diagnóstico / Revisión Gral.":1,"Ruidos":1,"Frenos / Reparación":1,"Actualización Software":1,"Reparación Eléctrica":2,"Presupuesto CH&P":1,"Garantía":2,"PDI":1,"Colocación de accesorios":1,"Cambio de SIM":1}
 };
-const FAMILIAS = [["Dolphin",/dolphin/i],["Yuan",/yuan/i],["Song Pro DMI",/song/i],["Atto 2",/atto/i],["Shark",/shark/i],["Seal U DMI",/seal/i],["Ti7",/ti\s?7/i]];
+const FAMILIAS = [["Dolphin",/dolphin/i],["Yuan",/yuan/i],["Song Pro DMI",/song/i],["Atto 2",/atto/i],["Shark",/shark/i],["Seal 5",/seal\s?5/i],["Seal U DMI",/seal/i],["Ti7",/ti\s?7/i]];
 function taller(){ const c=S.config.taller||{}; return {...TALLER_DEF,...c,pautaModelo:{...TALLER_DEF.pautaModelo,...(c.pautaModelo||{})},pautaTrabajo:{...TALLER_DEF.pautaTrabajo,...(c.pautaTrabajo||{})}}; }
 const familia = m => (FAMILIAS.find(([,rx])=>rx.test(m||""))||["Otros"])[0];
 function pautaHs(tipo,modelo,nServ){ const t=taller();
@@ -952,6 +964,7 @@ function renderAgenda(m){
     <div class="kpi" style="cursor:default"><b>${hsFmt(tot.disp-tot.asig)} h</b><span>Libres</span></div>
     <div class="kpi" style="cursor:default"><b class="pct ${tot.disp&&tot.asig>tot.disp?"bad":""}">${tot.disp?Math.round(tot.asig*100/tot.disp)+"%":"—"}</b><span>Ocupación</span></div>
     <div class="kpi" style="cursor:default"><b>${all.filter(t=>t.estado==="egresado").length}</b><span>Egresaron</span></div>
+    ${(n=>`<button class="kpi ${n?"kpi-alerta":""}" id="agPorVencer" title="Ver el listado"><b>${n}</b><span>⏰ Encuestas por vencer (${AVISO_PV} días)</span></button>`)(porVencer().length)}
   </div>
   ${ag.draft?`<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-color:var(--pv);background:var(--pv-soft)"><b>Elegí un horario libre para el turno de ${esc(ag.draft.cliente||"cliente nuevo")}</b><span class="sub">Tocá un horario libre del técnico. Podés cambiar de día con las flechas.</span><button class="btn sm" id="agDraftX" style="margin-left:auto">Cancelar</button></div>`:""}
   ${body}`;
@@ -963,11 +976,12 @@ function renderAgenda(m){
   m.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{ag.fecha=b.dataset.dia; ag.vista="dia"; render();});
   m.querySelectorAll("[data-turno]").forEach(b=>b.onclick=()=>openTurno(b.dataset.turno));
   m.querySelectorAll("[data-nuevo]").forEach(b=>b.onclick=()=>{ const [tec,f]=b.dataset.nuevo.split("|"); openTurno(null,{tecnico:tec,fecha:f}); });
+  $("#agPorVencer")?.addEventListener("click",irPorVencer);
   $("#agSuc").onchange=ev=>{ag.suc=ev.target.value; ag.tec=""; render();};
   $("#agTec").onchange=ev=>{ag.tec=ev.target.value; render();};
   $("#agNuevo").onclick=()=>openTurno(null,{fecha:ag.vista==="dia"?ag.fecha:(ag.fecha<today?today:ag.fecha),tecnico:ag.tec||""});
 }
-function pvToggle(){ return `<div class="block-h"><h2>Posventa</h2><div class="toolbar" role="tablist" aria-label="Sección de posventa"><button class="btn sm ${S.pvView!=="egresos"?"pri":""}" data-pv="agenda">Agenda de turnos</button><button class="btn sm ${S.pvView==="egresos"?"pri":""}" data-pv="egresos">Egresos y services</button></div></div>`; }
+function pvToggle(){ return `<div class="block-h"><h2>Posventa</h2><div class="toolbar" role="tablist" aria-label="Sección de posventa"><button class="btn sm ${S.pvView!=="egresos"&&S.pvView!=="precios"?"pri":""}" data-pv="agenda">Agenda de turnos</button><button class="btn sm ${S.pvView==="egresos"?"pri":""}" data-pv="egresos">Egresos y services</button><button class="btn sm ${S.pvView==="precios"?"pri":""}" data-pv="precios">Lista de precios</button></div></div>`; }
 
 function buscarClientes(q){
   const k=String(q||"").trim().toLowerCase(), a=alnum(q); if(k.length<3) return [];
@@ -990,6 +1004,7 @@ function openTurno(id,preset={}){
   const root=$("#panelRoot");
   root.innerHTML=`<div class="scrim" data-close></div><aside class="panel" role="dialog" aria-modal="true" aria-label="${t?"Turno de "+esc(t.cliente):"Nuevo turno"}">
     <div class="panel-h"><h2>${t?esc(t.cliente):"Nuevo turno"}</h2>${t?`<span class="chip ${ESTADO_TURNO[t.estado||"agendado"][0]}">${ESTADO_TURNO[t.estado||"agendado"][1]}</span>`:""}<button class="btn sm" data-close>Cerrar</button></div>
+    ${t&&(t.precio!=null||t.precioLista!=null)?`<div class="seg" style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline"><div><div class="sub">Precio acordado</div><div style="font-size:1.4rem;font-weight:800;color:var(--fg)">${ARS(t.precio)}</div></div>${t.precioLista!=null?`<div class="sub">Lista al agendar: ${ARS(t.precioLista)}${t.precioListaDesde?` (vigente desde ${fmt(t.precioListaDesde)})`:""}</div>`:""}${t.conFiltro?`<div class="sub">Incluye filtro de habitáculo (${ARS(t.precioFiltro)})</div>`:""}</div>`:""}
     ${t?`<div class="status-line">Agendado por <b>${esc(t.por||"—")}</b>${t.creado?` el ${new Date(t.creado).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"})}`:""}${t.cargadoPor&&t.cargadoPor!==t.por?` · cargado en la app por ${esc(t.cargadoPor)}`:""}</div>`:""}
     ${t?.estado==="egresado"?`<div class="seg"><div class="seg-h"><h3>Egreso del taller</h3>${caritaChip(t.carita)}</div><div class="status-line">Salió el ${fmt(svc?.fechaCierre||t.fechaEgreso)}${svc?.factura?" · "+esc(svc.factura):""}</div>${svc?`<button class="btn sm" id="verSvc">Ver seguimiento de 48 h</button>`:""}</div>`:""}
     <form id="tuForm" class="ficha-form" style="display:grid;gap:12px" autocomplete="off">
@@ -1008,6 +1023,9 @@ function openTurno(id,preset={}){
         <label class="fld">Tipo de trabajo *<select name="tipo" id="tu-tipo" required><option value="">Elegir…</option>${[...new Set([v.tipo,...TRABAJOS].filter(Boolean))].map(x=>`<option ${x===v.tipo?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
         <label class="fld">N° de service<input type="number" min="1" max="20" name="nServ" id="tu-ns" value="${esc(v.nServ||"")}" placeholder="1, 2, 3…"></label>
         <label class="fld">Horas de pauta *<input type="number" min="0.5" max="24" step="0.5" name="hs" id="tu-hs" required value="${esc(v.hs??"")}"></label>
+        <label class="fld">Precio acordado (ARS)<input name="precio" id="tu-precio" inputmode="numeric" value="${v.precio!=null?Number(v.precio).toLocaleString("es-AR"):""}" placeholder="$ 0"></label>
+        <div class="status-line" id="tuLista" style="align-self:end"></div>
+        <label class="choices" id="tuFiltroBox" style="grid-column:1/-1" hidden><label><input type="checkbox" name="conFiltro" id="tu-filtro" ${v.conFiltro?"checked":""}><span id="tuFiltroTxt">Suma reemplazo de filtro de aire del habitáculo</span></label></label>
         <label class="fld">Tipo de factura<select name="factura" id="tu-fac"><option value="">—</option>${[...new Set([v.factura,...FACTURAS].filter(Boolean))].map(x=>`<option ${x===v.factura?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
         <label class="fld">Agendado por *<select name="por" id="tu-por" ${t?"":"required"}><option value="">Elegir…</option>${[...new Set([v.por,...(T.atienden||[]),...(T.asesores||[]),...personas().map(p=>p.nombre)].filter(Boolean))].map(x=>`<option ${x===(v.por||(t?"":S.me?.nombre))?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
         <input type="hidden" name="vin" id="tu-vin" value="${esc(v.vin||"")}">
@@ -1044,7 +1062,16 @@ function openTurno(id,preset={}){
     if(tec&&d){ const h=horasTec(tec,d,d), propio=t&&t.fecha===d&&t.tecnico===tec.nombre&&turnoActivo(t)?Number(t.hs)||0:0, nuevo=h.asig-propio+(Number(el("hs").value)||0);
       $("#tuCap").innerHTML=`${esc(tec.nombre)} el ${fmt(d)}: ${hsFmt(nuevo)} de ${hsFmt(h.disp)} h con este turno${nuevo>h.disp?` · <b style="color:var(--bad)">supera la capacidad del día</b>`:` · quedan ${hsFmt(h.disp-nuevo)} h libres`}${!isWeekday(d)?" · es fin de semana":""}`; }
     else $("#tuCap").textContent=p!=null?`Pauta: ${hsFmt(p)} h`:""; 
-    el("nServ").closest("label").style.opacity=el("tipo").value==="Mantenimiento"?1:.55; fillHora(); };
+    el("nServ").closest("label").style.opacity=el("tipo").value==="Mantenimiento"?1:.55; fillHora(); showLista(); showFiltro(); };
+  const showLista=()=>{ const box=$("#tuLista"); if(!box) return; const pl=precioLista(el("tipo").value,el("modelo").value,el("nServ").value), P=preciosVig();
+    if(t&&t.precioLista!=null){ box.dataset.html=""; box.innerHTML=`Precio de lista al agendar: <b>${ARS(t.precioLista)}</b>${pl!=null&&pl!==t.precioLista?` · hoy la lista dice ${ARS(pl)}`:""}`; return; }
+    if(pl==null){ box.dataset.html=""; box.textContent=el("tipo").value==="Mantenimiento"&&!el("nServ").value?"Elegí el N° de service para ver el precio de lista.":el("tipo").value?"Sin precio de lista para este trabajo.":""; return; }
+    const html=`Precio de lista: <b>${ARS(pl)}</b>${P.desde?` <span class="sub">(vigente desde ${fmt(P.desde)})</span>`:""} <button type="button" class="btn sm" id="usarLista" data-pl="${pl}">Usar este precio</button>`;
+    if(box.dataset.html!==html){ box.innerHTML=html; box.dataset.html=html; } };
+  const showFiltro=()=>{ const fb=$("#tuFiltroBox"); if(!fb) return; const fp=el("tipo").value==="Mantenimiento"?preciosVig().items?.[`f|${familia(el("modelo").value)}`]:null; const fv=t?.precioFiltro??fp;
+    fb.hidden=!(fv>0); if(fv>0) $("#tuFiltroTxt").textContent=`Suma reemplazo de filtro de aire del habitáculo (+ ${ARS(fv)}, sugerido)`; fb.dataset.v=fv||""; };
+  el("conFiltro").addEventListener("change",()=>{ const fv=Number($("#tuFiltroBox").dataset.v)||0, cur=parseARS(el("precio").value)||0; const n=el("conFiltro").checked?cur+fv:Math.max(0,cur-fv); el("precio").value=n?n.toLocaleString("es-AR"):""; });
+  $("#tuLista").addEventListener("click",ev=>{ const b=ev.target.closest("#usarLista"); if(b){ const fv=el("conFiltro").checked?(Number($("#tuFiltroBox").dataset.v)||0):0; el("precio").value=(Number(b.dataset.pl)+fv).toLocaleString("es-AR"); } });
   const choque=(tec,d,h,hs)=>{ const a=toMin(h); if(a==null||!tec||!d) return null; const b=a+Math.round((hs||1)*60); return ocupados(tec,d,t?._id).find(o=>a<o.b&&b>o.a)||null; };
   const fillHora=()=>{ const sel=el("hora"), cur=sel.value||v.hora||"", tec=el("tecnico").value, d=el("fecha").value, hs=Number(el("hs").value)||1;
     const H=taller().horario||{}, ini=toMin(H.inicio)??480, fin=toMin(H.fin)??990; const slots=[]; for(let mm=ini; mm<fin; mm+=30) slots.push(fmtMin(mm));
@@ -1064,6 +1091,7 @@ function openTurno(id,preset={}){
   ["tipo","modelo","nServ","tecnico","fecha"].forEach(n=>el(n).addEventListener("change",recalc));
   el("nServ").addEventListener("input",recalc);
   el("hs").addEventListener("input",()=>{ hsManual=true; recalc(); });
+  el("precio").addEventListener("input",()=>{ const n=parseARS(el("precio").value); el("precio").value=n==null?"":n.toLocaleString("es-AR"); });
   recalc();
   const bus=$("#tuBusca");
   if(bus){ bus.oninput=()=>{ const r=buscarClientes(bus.value); $("#tuRes").innerHTML=r.map((o,i)=>`<button type="button" class="turno" data-pick="${i}"><b>${esc(o.cliente)}</b><span class="sub">${esc(o.modelo)}${o.patente?" · "+esc(o.patente):""}${o.telefono?" · "+esc(o.telefono):""} · ${o.fuente==="entrega"?"0 km entregado "+fmt(o.entrega.fechaEntrega):o.fuente==="service"?"service anterior":"turno anterior"}</span></button>`).join("")||(bus.value.trim().length>=3?`<div class="note">No lo encontramos. Completá los datos abajo y queda dado de alta como cliente nuevo.</div>`:"");
@@ -1076,6 +1104,9 @@ function openTurno(id,preset={}){
     const data={...(t||{}),cliente:String(fd.get("cliente")).trim(),telefono:String(fd.get("telefono")||"").replace(/\D/g,""),modelo:fd.get("modelo"),patente:alnum(fd.get("patente")),vin:cleanVin(fd.get("vin")),fecha:fd.get("fecha"),hora:fd.get("hora"),sucursal:fd.get("sucursal"),tecnico:fd.get("tecnico"),tipo:fd.get("tipo"),factura:fd.get("factura")||"",nServ:Number(fd.get("nServ"))||null,hs:Number(fd.get("hs"))||null,obs:String(fd.get("obs")||"").trim(),estado:t?.estado||"agendado"};
     delete data._id; for(const k of ["telefono","patente","vin","nServ","obs","factura"]) if(!data[k]) delete data[k];
     if(!data.hs){ toast("Cargá las horas de pauta"); return; }
+    if(fd.get("conFiltro")){ data.conFiltro=true; data.precioFiltro=Number($("#tuFiltroBox").dataset.v)||null; } else { delete data.conFiltro; delete data.precioFiltro; }
+    { const pr=parseARS(fd.get("precio")); if(pr!=null) data.precio=pr; else delete data.precio;
+      if(!t||t.precioLista==null){ const pl=precioLista(data.tipo,data.modelo,data.nServ); if(pl!=null){ data.precioLista=pl; data.precioListaDesde=preciosVig().desde||""; } } }
     data.origen=fd.get("origen")||""; data.dealer=data.origen==="otro"?String(fd.get("dealer")||"").trim():"";
     if(data.origen==="otro"&&!data.dealer){ toast("Escribí de qué concesionario es el auto"); return; }
     if(!data.dealer) delete data.dealer;
@@ -1101,8 +1132,9 @@ function openTurno(id,preset={}){
     const vin=cleanVin(fd.get("vin")||t.vin), ent=vin.length>=11?[...S.entregas.values()].find(x=>cleanVin(x.vin)===vin):null;
     const dealer=fd.get("origen")==="otro"?String(fd.get("dealer")||"").trim():"";
     if(fd.get("origen")==="otro"&&!dealer){ msg.textContent="Escribí de qué concesionario es el auto."; return; }
-    const sv={dealer,sinTurno:!!t.sinTurno,atendio:t.atendio||"",factura:t.factura||"",patente:t.patente||"",vin:vin||"",cliente:t.cliente,telefono:t.telefono||"",modelo:t.modelo||"",sucursal:t.sucursal,fechaCierre:fd.get("fechaCierre"),tipo:t.tipo,km:String(fd.get("km")||"").replace(/\D/g,""),asesor:fd.get("asesor")||"",tecnico:t.tecnico,carita:fd.get("carita"),turnoId:t._id,clienteNuevo:!ent,seg:{s48:{estado:"pendiente"}},creado:new Date().toISOString()};
+    const sv={precio:t.precio??null,precioLista:t.precioLista??null,dealer,sinTurno:!!t.sinTurno,atendio:t.atendio||"",factura:t.factura||"",patente:t.patente||"",vin:vin||"",cliente:t.cliente,telefono:t.telefono||"",modelo:t.modelo||"",sucursal:t.sucursal,fechaCierre:fd.get("fechaCierre"),tipo:t.tipo,km:String(fd.get("km")||"").replace(/\D/g,""),asesor:fd.get("asesor")||"",tecnico:t.tecnico,carita:fd.get("carita"),turnoId:t._id,clienteNuevo:!ent,seg:{s48:{estado:"pendiente"}},creado:new Date().toISOString()};
     for(const k of ["vin","telefono","modelo","km","asesor","patente","factura","dealer","sinTurno","atendio"]) if(!sv[k]) delete sv[k];
+    for(const k of ["precio","precioLista"]) if(sv[k]==null) delete sv[k];
     const dup=svcDuplicado(sv); if(dup){ msg.innerHTML=`<b style="color:var(--bad)">Ya hay un egreso de ${esc(dup.cliente||"")} con fecha ${fmt(dup.fechaCierre)}.</b> No se cargó de nuevo.`; return; }
     if(!(await saveSvc(sid,sv))) return; S.services.set(sid,{...sv,_id:sid});
     const data={...t,estado:"egresado",carita:sv.carita,svcId:sid,fechaEgreso:sv.fechaCierre,actualizado:new Date().toISOString()}; if(vin) data.vin=vin; delete data._id;
@@ -1147,6 +1179,7 @@ function tallerRep(){
     ${per==="mes"?`<input type="month" id="tlRefM" value="${desde.slice(0,7)}" aria-label="Mes">`:`<input type="date" id="tlRefD" value="${esc(ref)}" aria-label="Semana">`}</div>
     <div class="tablewrap"><table><thead><tr><th>Técnico</th><th>Sucursal</th><th class="num">Hs disponibles</th><th class="num">Hs asignadas</th><th class="num">Hs libres</th><th class="num">Ocupación</th></tr></thead><tbody>
     ${rows.map(r=>`<tr><td>${esc(r.t.nombre)}</td><td>${esc(r.t.sucursal)}</td><td class="num">${hsFmt(r.disp)}</td><td class="num">${hsFmt(r.asig)}</td><td class="num ${r.libres<0?"pct bad":""}">${hsFmt(r.libres)}</td><td class="num"><b class="pct ${r.ocup>100?"bad":r.ocup>=85?"warn":""}">${pc(r.ocup)}</b></td></tr>`).join("")}
+    <tr><td colspan="6" class="sub">Importe acordado de los turnos del período: <b style="color:var(--fg)">${ARS(tur.reduce((a,t)=>a+(Number(t.precio)||0),0))}</b> · ${tur.filter(t=>t.precio!=null).length} de ${tur.length} turnos con precio cargado</td></tr>
     <tr><td><b>Total taller</b></td><td></td><td class="num"><b>${hsFmt(tot.disp)}</b></td><td class="num"><b>${hsFmt(tot.asig)}</b></td><td class="num"><b>${hsFmt(tot.disp-tot.asig)}</b></td><td class="num"><b>${pc(tot.disp?tot.asig*100/tot.disp:null)}</b></td></tr>
     </tbody></table></div>
     <div class="note">Horas disponibles = días hábiles (lunes a viernes) × horas por día de cada técnico. Asignadas = horas de pauta de los turnos agendados o egresados (no cuentan cancelados ni "no vino").</div>
@@ -1194,8 +1227,8 @@ async function importTurnos(f,msg){
 }
 
 /* ---- Movimientos (auditoría) ---- */
-const COL_NOM={entregas:"Entrega",services:"Service",turnos:"Turno",encuestas:"Encuesta ventas",encuestas_pv:"Encuesta posventa",config:"Configuración",historico:"Archivo"};
-const CAMPO_NOM={cliente:"Cliente",telefono:"Teléfono",vin:"VIN",modelo:"Modelo",sucursal:"Sucursal",fechaEntrega:"Fecha de entrega",vendedor:"Vendedor",entregador:"Entregó",notas:"Notas",carita:"Carita",patente:"Patente",tipo:"Tipo de trabajo",fecha:"Fecha",hora:"Horario",tecnico:"Técnico",hs:"Horas",estado:"Estado",fechaCierre:"Fecha de egreso",factura:"Factura",asesor:"Asesor",km:"Km",obs:"Observaciones",nServ:"N° de service"};
+const COL_NOM={precios:"Lista de precios",entregas:"Entrega",services:"Service",turnos:"Turno",encuestas:"Encuesta ventas",encuestas_pv:"Encuesta posventa",config:"Configuración",historico:"Archivo"};
+const CAMPO_NOM={cliente:"Cliente",telefono:"Teléfono",vin:"VIN",modelo:"Modelo",sucursal:"Sucursal",fechaEntrega:"Fecha de entrega",vendedor:"Vendedor",entregador:"Entregó",notas:"Notas",carita:"Carita",patente:"Patente",tipo:"Tipo de trabajo",fecha:"Fecha",hora:"Horario",tecnico:"Técnico",hs:"Horas",estado:"Estado",fechaCierre:"Fecha de egreso",factura:"Factura",precio:"Precio acordado",precioLista:"Precio de lista",asesor:"Asesor",km:"Km",obs:"Observaciones",nServ:"N° de service"};
 function aplanar(o,p="",out={}){ if(o&&typeof o==="object"&&!Array.isArray(o)){ for(const [k,v] of Object.entries(o)) aplanar(v,p?p+"."+k:k,out); } else out[p]=Array.isArray(o)?JSON.stringify(o):o; return out; }
 function nombreCampo(k){ const parts=k.split("."); if(parts[0]==="seg"){ const st=[...ALLST,S48].find(s=>s.k===parts[1]); return `${st?st.label:parts[1]} · ${({estado:"estado",fecha:"fecha",comentario:"comentario",por:"quién llamó",problema:"problema",tema:"tema",resuelto:"resuelto",resolucion:"resolución",encargado:"responsable",turno:"turno",intentos:"intentos",tipo:"tipo"})[parts[2]]||parts[2]}`; } if(parts[0]==="check") return "Checklist · "+({app:"App vinculada",cpim:"Alta CPIM",crm:"Estado CRM",com:"Comentario"}[parts[1]]||parts[1]); return CAMPO_NOM[k]||k; }
 const IGN=/^(actualizado|creado|importado)$/;
@@ -1278,33 +1311,193 @@ async function importarTallerBYD(){
   catch(e){ msg.textContent="No se pudo importar: "+(e.message||e); $("#doTaller").disabled=false; return; }
   IMPORT=null; S.lastImport=`Última importación: ${d.activas.length} encuestas activas y ${d.respondidas.length} respondidas${cerradas?`. ${cerradas} que ya no están activas se marcaron como cerradas`:""}.`; toast("Encuestas de taller importadas"); render();
 }
-function exportPvXls(rows,sueltas,f,q){
-  if(!window.XLSX?.utils){ toast("No se pudo cargar el exportador. Recargá la página."); return; }
-  const d=x=>x?fmt(x):"", today=todayISO();
-  const est=st=>st.k==="respondio"?"Respondió":st.k==="pendiente"?"Pendiente (aún no la recibe)":st.abierta?`No respondió · cierra en ${st.dias} días`:"No respondió · vencida";
-  const h1=rows.map(({v,st,fe})=>{ const r=v.recordatorioEncuesta, s48=stageInfo(v,S48,today);
-    return {"Estado encuesta":est(st),"NPS":st.k==="respondio"?st.sv.nps:"","Comentario encuesta":st.k==="respondio"?(st.sv.comentario||""):"","Cliente":v.cliente||"","Teléfono":v.telefono||"","Modelo":v.modelo||"","Patente":v.patente||"","VIN":v.vin||"","Sucursal":v.sucursal||"","Tipo de trabajo":v.tipo||"","Concesionario":v.dealer||"BYD Simone","Cliente nuevo":v.clienteNuevo?"Sí":"","Retiró":d(v.fechaCierre),"Fecha encuesta":d(fe),"Cómo se fue":v.carita?CARITAS[v.carita]?.[1]||"":"","Asesor":v.asesor||v.atendio||"","Técnico":v.tecnico||"","Seguimiento 48 h":s48.s.estado==="sin_respuesta"?"Sin respuesta":({hecho:"Hecho",vencido:"Vencido",hoy:"Hoy",proximo:"Programado",perdido:"No se hizo",nc:"No corresponde"})[s48.status]||"","Recordatorio":r?`Avisado ${r.veces||1} ${r.veces>1?"veces":"vez"} · ${fmt(r.fecha)}`:"","Posible duplicado":esDuplicado(v)?"Sí":""}; });
-  const act=[...S.encPvRaw.values()].filter(s=>s.activa&&s.nps==null).map(s=>{ const c=vinCliente(s.vin), r=s.recordatorio; return {"Cliente":c?.cliente||"No está en la app","Teléfono":c?.telefono||"","Modelo":c?.modelo||"","Patente":c?.patente||"","VIN":s.vin||"","Enviada":d(s.activacion),"Cierra":s.activacion?d(addDays(s.activacion,60)):"","Recordatorio":r?`Avisado ${r.veces||1} ${r.veces>1?"veces":"vez"} · ${fmt(r.fecha)}`:""}; });
-  const byV=new Map([...S.entregas.values()].filter(e=>e.vin).map(e=>[cleanVin(e.vin),e]));
-  const sue=sueltas.map(x=>{ const e=x.vin?byV.get(cleanVin(x.vin)):null; return {"NPS":x.nps,"Cliente":e?.cliente||(x.anonima?"Anónima":""),"Teléfono":e?.telefono||"","VIN":x.vin||"","Fecha":d(x.fecha),"Comentario":x.comentario||""}; });
-  const wb=XLSX.utils.book_new(); const add=(data,name)=>{ const ws=XLSX.utils.json_to_sheet(data.length?data:[{"":"Sin datos"}]); const ks=Object.keys(data[0]||{"":1}); ws["!cols"]=ks.map(k=>({wch:Math.min(45,Math.max(k.length+2,...data.map(r=>String(r[k]??"").length+1)))})); XLSX.utils.book_append_sheet(wb,ws,name); };
-  add(h1,"Services"); if(act.length) add(act,"Activas BYD sin responder"); if(sue.length) add(sue,"Respuestas sin service");
-  const nom={no_respondio:"no-respondio",pendiente:"pendientes",respondio:"respondieron",todos:"todos"}[f]||f;
-  const partes=["encuestas-posventa",nom,S.suc,S.encPer==="mes"?(S.encMes||today.slice(0,7)):S.encPer==="dia"?(S.encDia||today):"",today].filter(Boolean).map(x=>String(x).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9-]+/g,"-").toLowerCase());
-  XLSX.writeFile(wb,partes.join("_")+".xlsx"); toast(`Excel con ${h1.length} services descargado`);
-}
 function bloqueActivasPv(q){
   const today=todayISO();
-  const act=[...S.encPvRaw.entries()].filter(([,s])=>s.activa&&s.nps==null).map(([id,s])=>{ const c=vinCliente(s.vin); const cierra=s.activacion?addDays(s.activacion,60):""; return {id,s,c,cierra,dias:cierra?diffDays(cierra,today):null}; })
+  const usados=new Set(visibleSvc().map(v=>svcSurvey(v)).filter(Boolean));
+  const act=[...S.encPvRaw.entries()].filter(([id,s])=>s.activa&&s.nps==null&&!usados.has(S.encPv.get(id))&&!usados.has(s)).map(([id,s])=>{ const c=vinCliente(s.vin); const cierra=s.activacion?addDays(s.activacion,VIG_PV):""; return {id,s,c,cierra,dias:cierra?diffDays(cierra,today):null}; })
     .filter(o=>!S.suc||!o.c||o.c.sucursal===S.suc).filter(o=>!q||[o.c?.cliente,o.s.vin,o.c?.telefono,o.c?.patente].some(t=>String(t||"").toLowerCase().includes(q))).sort((a,b)=>(a.dias??999)-(b.dias??999));
   if(!act.length) return "";
   const enApp=act.filter(o=>o.c).length;
   return `<section class="card" style="display:grid;gap:10px;border-color:#a9def5;background:#f2fafe"><div class="block-h"><h3 style="color:#0b78a8">Encuestas activas en BYD sin responder</h3><span class="chip warn">${act.length}</span><span class="sub">${enApp} cruzadas con clientes de la app. Recordales que respondan, sin sugerir un puntaje.</span></div>
-  <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>VIN</th><th>Enviada</th><th>Cierra</th><th>Recordatorio</th><th></th></tr></thead><tbody>
-  ${act.map(o=>{ const r=o.s.recordatorio; return `<tr ${o.c?.svc?`class="click" data-svc="${esc(o.c.svc._id)}" tabindex="0"`:o.c?.entrega?`class="click" data-open="${esc(o.c.entrega._id)}" tabindex="0"`:""}><td>${o.c?`${esc(o.c.cliente||"")}<div class="sub">${esc(o.c.modelo||"")}${o.c.telefono?` · <span class="mono">${esc(o.c.telefono)}</span>`:""}${o.c.patente?` · ${esc(o.c.patente)}`:""}</div>`:`<span class="sub">No está en la app</span>`}</td><td class="mono">${esc(o.s.vin||"")}</td><td>${fmt(o.s.activacion)}</td><td>${o.dias==null?"—":o.dias<0?`<span class="chip bad">Vencida</span>`:`<span class="chip ${o.dias<=7?"warn":""}">en ${o.dias} días</span>`}</td><td>${r?`<span class="chip acc">Avisado ${r.veces>1?r.veces+" veces ":""}· ${fmt(r.fecha)}</span>`:""}</td><td><button class="btn sm" data-recpv="${esc(o.id)}" ${S.canWrite?"":"disabled"}>Marcar avisado</button></td></tr>`; }).join("")}
+  <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>VIN</th><th>Activación</th><th>Vence</th><th>Recordatorio</th><th></th></tr></thead><tbody>
+  ${act.map(o=>{ const r=o.s.recordatorio; return `<tr ${o.dias!=null&&o.dias>=0&&o.dias<=AVISO_PV?`style="background:#fff1ef"`:""} ${o.c?.svc?`class="click" data-svc="${esc(o.c.svc._id)}" tabindex="0"`:o.c?.entrega?`class="click" data-open="${esc(o.c.entrega._id)}" tabindex="0"`:""}><td>${o.c?`${esc(o.c.cliente||"")}<div class="sub">${esc(o.c.modelo||"")}${o.c.telefono?` · <span class="mono">${esc(o.c.telefono)}</span>`:""}${o.c.patente?` · ${esc(o.c.patente)}`:""}</div>`:`<span class="sub">No está en la app</span>`}</td><td class="mono">${esc(o.s.vin||"")}</td><td>${fmt(o.s.activacion)}</td><td>${o.dias==null?"—":chipVence(o.dias)}<div class="sub">${o.cierra?fmt(o.cierra):""}</div></td><td>${r?`<span class="chip acc">Avisado ${r.veces>1?r.veces+" veces ":""}· ${fmt(r.fecha)}</span>`:""}</td><td><button class="btn sm" data-recpv="${esc(o.id)}" ${S.canWrite?"":"disabled"}>Marcar avisado</button></td></tr>`; }).join("")}
   </tbody></table></div></section>`;
 }
-function bindActivasPv(m){ m.querySelectorAll("[data-recpv]").forEach(b=>b.addEventListener("click",async ev=>{ ev.stopPropagation(); const id=b.dataset.recpv, s=S.encPvRaw.get(id); if(!s) return; const r=s.recordatorio||{}; try{ await S.db.doc("encuestas_pv/"+id).set({...s,recordatorio:{fecha:todayISO(),veces:(r.veces||0)+1}}); toast("Recordatorio registrado"); }catch(e){ toast("No se pudo guardar"); } })); }
+function bindActivasPv(m){ m.querySelectorAll("[data-recpv]").forEach(b=>b.addEventListener("click",async ev=>{ ev.stopPropagation(); const id=b.dataset.recpv, s=S.encPvRaw.get(id); if(!s) return; const r=s.recordatorio||{}; try{ const d={...s,recordatorio:{fecha:todayISO(),veces:(r.veces||0)+1}}; await S.db.doc("encuestas_pv/"+id).set(d); S.encPvRaw.set(id,d); mergeEncPv(); toast("Recordatorio registrado"); render(); }catch(e){ toast("No se pudo guardar"); } })); }
+
+/* ---- Posventa: vigencia de encuestas, alertas, exportaciones ---- */
+const VIG_PV = 30, AVISO_PV = 5;   // posventa: 30 días desde la activación; alerta 5 días antes. Ventas sigue en 60 (encEstado).
+const ARS = n => n==null||n===""||isNaN(n) ? "—" : new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n));
+const parseARS = s => { const d=String(s??"").replace(/[^\d]/g,""); return d?Number(d):null; };
+function pvAbiertas(today=todayISO()){
+  const out=[], vinsSvc=new Set();
+  for(const v of visibleSvc()){ const st=svcEstado(v,today); if(cleanVin(v.vin).length>=11) vinsSvc.add(cleanVin(v.vin)+"|"+(st.sv?._key||""));
+    if(st.k==="no_respondio") out.push({tipo:"svc",id:v._id,v,cliente:v.cliente||"",telefono:v.telefono||"",modelo:v.modelo||"",patente:v.patente||"",vin:v.vin||"",sucursal:v.sucursal||"",fechaService:v.fechaCierre,activacion:st.recibe,vence:st.cierra,dias:st.dias,abierta:st.abierta,recordatorio:v.recordatorioEncuesta,dealer:v.dealer||""}); }
+  const usados=new Set(visibleSvc().map(v=>svcSurvey(v)).filter(Boolean));
+  for(const [id,s] of S.encPvRaw.entries()){ if(!s.activa||s.nps!=null||!s.activacion) continue; if(usados.has(S.encPv.get(id))||usados.has(s)) continue;
+    const c=vinCliente(s.vin); if(S.suc&&c&&c.sucursal&&c.sucursal!==S.suc) continue; const vence=addDays(s.activacion,VIG_PV), dias=diffDays(vence,today);
+    out.push({tipo:"byd",id,s,cliente:c?.cliente||"",telefono:c?.telefono||"",modelo:c?.modelo||"",patente:c?.patente||"",vin:s.vin||"",sucursal:c?.sucursal||"",fechaService:c?.svc?.fechaCierre||"",activacion:s.activacion,vence,dias,abierta:dias>=0,recordatorio:s.recordatorio,c}); }
+  return out.sort((a,b)=>a.dias-b.dias);
+}
+const porVencer = (today=todayISO()) => pvAbiertas(today).filter(x=>x.abierta&&x.dias<=AVISO_PV);
+function chipVence(dias){ if(dias<0) return `<span class="chip bad">Vencida</span>`; if(dias<=AVISO_PV) return `<span class="chip alerta">⏰ Vence ${dias===0?"hoy":dias===1?"mañana":"en "+dias+" días"}</span>`; return `<span class="chip warn">Pendiente · vence en ${dias} días</span>`; }
+function irPorVencer(){ S.tab="encuestas"; S.encTipo="pv"; S.pvFiltro="por_vencer"; try{localStorage.setItem("cx.tab","encuestas");}catch(e){} render(); window.scrollTo(0,0); }
+
+/* celulares para Zenvia: siempre 549 + 10 dígitos */
+function normCel(t){ let d=String(t||"").replace(/\D/g,""); if(!d) return null;
+  if(d.startsWith("00")) d=d.slice(2);
+  if(d.startsWith("549")&&d.length===13) return d;
+  if(d.startsWith("54")) { d=d.slice(2); if(d.startsWith("9")&&d.length===11) d=d.slice(1); }
+  if(d.startsWith("0")) d=d.slice(1);
+  if(d.length===12){ for(const a of [2,3,4]) if(d.substr(a,2)==="15"){ const x=d.slice(0,a)+d.slice(a+2); if(x.length===10){ d=x; break; } } }
+  if(d.length===10 && /^[1-9]/.test(d)) return "549"+d;
+  return null; }
+function splitNombre(n){ let s=String(n||"").replace(/^\s*RV\s*[-–:]?\s*/i,"").replace(/\(.*?\)/g," ").replace(/\s+/g," ").trim(); const p=s.split(" "); return {nombre:p[0]||"",apellido:p.slice(1).join(" ")}; }
+function descargar(nombre,contenido,tipo){ const b=new Blob([contenido],{type:tipo}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+function exportZenvia(contactos,etiqueta){
+  const vistos=new Set(), filas=[], malos=[];
+  for(const c of contactos){ const cel=normCel(c.telefono); if(!cel){ malos.push(c.cliente||"(sin nombre)"); continue; } if(vistos.has(cel)) continue; vistos.add(cel); const {nombre,apellido}=splitNombre(c.cliente); filas.push([cel,nombre,apellido]); }
+  if(!filas.length){ toast("No hay celulares válidos para exportar en esta vista"); S.zenMsg=malos.length?`Sin exportar (celular faltante o inválido): ${malos.join(", ")}`:""; render(); return; }
+  const q=v=>{ v=String(v??"").replace(/[\r\n]+/g," ").trim(); return /[",]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
+  const csv=["Celular,Nombre,Apellido",...filas.map(r=>r.map(q).join(","))].join("\r\n")+"\r\n";
+  descargar(`zenvia_posventa_${etiqueta}_${todayISO()}.csv`,csv,"text/csv;charset=utf-8");
+  S.zenMsg=`CSV para Zenvia: ${filas.length} contactos${contactos.length-filas.length-malos.length>0?` (${contactos.length-filas.length-malos.length} duplicados quitados)`:""}${malos.length?`. Sin exportar por celular faltante o inválido (${malos.length}): ${malos.slice(0,15).join(", ")}${malos.length>15?"…":""}`:""}.`;
+  toast(`CSV para Zenvia con ${filas.length} contactos`); render(); }
+function exportPvCompleto(){
+  if(!window.XLSX?.utils){ toast("No se pudo cargar el exportador. Recargá la página."); return; }
+  const today=todayISO(), d=x=>x?fmt(x):"";
+  const filas=[];
+  for(const v of visibleSvc()){ const st=svcEstado(v,today), s48=stageInfo(v,S48,today), r=v.recordatorioEncuesta;
+    const actE=st.k==="respondio"?(st.sv.activacion||[addDays(v.fechaCierre,3),st.sv.fecha].filter(Boolean).sort()[0]):st.recibe;
+    const estado=st.k==="respondio"?"Respondida":st.k==="pendiente"?"Pendiente · aún no la recibe":st.abierta?(st.dias<=AVISO_PV?"Pendiente · por vencer":"Pendiente"):"Vencida";
+    const nps=st.k==="respondio"?st.sv.nps:"";
+    filas.push({"Origen":"Service cargado en la app","Estado":estado,"Cliente":v.cliente||"","Celular":v.telefono||"","Celular (formato 549)":normCel(v.telefono)||"","Modelo":v.modelo||"","Patente":v.patente||"","VIN":v.vin||"","Sucursal":v.sucursal||"","Tipo de trabajo":v.tipo||"","Fecha del service":d(v.fechaCierre),"Activación encuesta":d(actE),"Vencimiento":d(addDays(actE,VIG_PV)),"Días para vencer":st.k==="no_respondio"&&st.abierta?st.dias:"","Fecha de respuesta":st.k==="respondio"?d(st.sv.fecha):"","NPS (0-10)":nps,"Clasificación":nps===""?"":npsLabel(nps),"Comentario":st.k==="respondio"?(st.sv.comentario||""):"","Recordatorio":r?`Avisado ${r.veces||1} ${r.veces>1?"veces":"vez"} · ${fmt(r.fecha)}`:"","Concesionario":v.dealer||"BYD Simone","Cómo se fue":v.carita?CARITAS[v.carita]?.[1]||"":"","Precio acordado":v.precio??"","Asesor":v.asesor||v.atendio||"","Técnico":v.tecnico||"","Seguimiento 48 h":s48.s.estado==="sin_respuesta"?"Sin respuesta":({hecho:"Hecho",vencido:"Vencido",hoy:"Hoy",proximo:"Programado",perdido:"No se hizo",nc:"No corresponde"})[s48.status]||""}); }
+  const usados=new Set(visibleSvc().map(v=>svcSurvey(v)).filter(Boolean)); const byV=new Map([...S.entregas.values()].filter(e=>e.vin).map(e=>[cleanVin(e.vin),e]));
+  for(const [id,s] of S.encPvRaw.entries()){ const sm=S.encPv.get(id)||s; if(usados.has(sm)||usados.has(s)) continue; const c=vinCliente(s.vin)||(s.vin?(e=>e?{cliente:e.cliente,telefono:e.telefono,modelo:e.modelo,sucursal:e.sucursal}:null)(byV.get(cleanVin(s.vin))):null);
+    if(S.suc&&c?.sucursal&&c.sucursal!==S.suc) continue;
+    const resp=s.nps!=null, act=s.activacion||"", venc=act?addDays(act,VIG_PV):"", dias=venc?diffDays(venc,today):null;
+    const estado=resp?"Respondida":s.activa?(dias<0?"Vencida":dias<=AVISO_PV?"Pendiente · por vencer":"Pendiente"):(s.estado==="Cerrada sin respuesta"?"Vencida":"—");
+    filas.push({"Origen":resp?"Respuesta BYD sin service en la app":"Encuesta activa BYD sin service en la app","Estado":estado,"Cliente":c?.cliente||(s.anonima?"Anónima":""),"Celular":c?.telefono||"","Celular (formato 549)":normCel(c?.telefono)||"","Modelo":c?.modelo||"","Patente":c?.patente||"","VIN":s.vin||"","Sucursal":c?.sucursal||"","Tipo de trabajo":"","Fecha del service":"","Activación encuesta":d(act),"Vencimiento":d(venc),"Días para vencer":!resp&&dias!=null&&dias>=0?dias:"","Fecha de respuesta":resp?d(s.fecha):"","NPS (0-10)":resp?s.nps:"","Clasificación":resp?npsLabel(s.nps):"","Comentario":s.comentario||"","Recordatorio":s.recordatorio?`Avisado ${s.recordatorio.veces||1} ${s.recordatorio.veces>1?"veces":"vez"} · ${fmt(s.recordatorio.fecha)}`:"","Concesionario":"","Cómo se fue":"","Precio acordado":"","Asesor":"","Técnico":"","Seguimiento 48 h":"","N° de orden BYD":s.orden||""}); }
+  const ws=XLSX.utils.json_to_sheet(filas.length?filas:[{"Estado":"Sin datos"}]); const ks=Object.keys(filas[0]||{Estado:1});
+  ws["!cols"]=ks.map(k=>({wch:Math.min(45,Math.max(k.length+2,...filas.map(r=>String(r[k]??"").length+1)))})); ws["!autofilter"]={ref:ws["!ref"]};
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Encuestas posventa");
+  XLSX.writeFile(wb,`encuestas-posventa_completo${S.suc?"_"+S.suc.toLowerCase().replace(/\s+/g,"-"):""}_${today}.xlsx`); toast(`Excel con ${filas.length} encuestas descargado`); }
+
+function renderEncuestasPv(m){
+  const today=todayISO(), f=S.pvFiltro||"no_respondio", soloAbiertas=S.encAbiertas!==false, q=(S.encQ||"").toLowerCase();
+  const pf=S.encPer||"", pv=pf==="mes"?(S.encMes||today.slice(0,7)):pf==="dia"?(S.encDia||today):"";
+  const all=visibleSvc().map(v=>{const st=svcEstado(v,today); const fe=st.k==="respondio"&&/^\d{4}-\d{2}-\d{2}$/.test(st.sv.fecha||"")?st.sv.fecha:st.recibe||addDays(v.fechaCierre,3); return {v,st,fe};}).filter(x=>!pf||(pf==="mes"?x.fe.slice(0,7)===pv:x.fe===pv));
+  const cnt={respondio:0,no_respondio:0,abiertas:0,pendiente:0}; all.forEach(x=>{cnt[x.st.k]++; if(x.st.k==="no_respondio"&&x.st.abierta) cnt.abiertas++;});
+  const tasa=cnt.respondio+cnt.no_respondio?Math.round(cnt.respondio*100/(cnt.respondio+cnt.no_respondio)):null;
+  const pvenc=porVencer(today).filter(x=>!q||[x.cliente,x.vin,x.patente,x.telefono].some(t=>String(t||"").toLowerCase().includes(q)));
+  let rows=f==="por_vencer"?[]:all.filter(x=>f==="todos"||x.st.k===f); if(f==="no_respondio"&&soloAbiertas) rows=rows.filter(x=>x.st.abierta);
+  if(q) rows=rows.filter(x=>[x.v.cliente,x.v.vin,x.v.patente,x.v.telefono].some(t=>String(t||"").toLowerCase().includes(q)));
+  rows.sort((a,b)=>f==="no_respondio"?(a.st.dias-b.st.dias):b.v.fechaCierre.localeCompare(a.v.fechaCierre));
+  const usadas=new Set(visibleSvc().map(v=>svcSurvey(v)).filter(Boolean)); const sueltas=[...S.encPv.values()].filter(s=>s.nps!=null&&!usadas.has(s)&&(!pf||(pf==="mes"?String(s.fecha||"").slice(0,7)===pv:s.fecha===pv)));
+  const tab=(k,l,n,cls)=>`<button class="kpi ${cls}" data-pf="${k}" style="${f===k?"border-color:var(--accent);background:var(--accent-soft)":""}"><b>${n}</b><span>${l}</span></button>`;
+  const chip=st=>st.k==="respondio"?`<span class="chip ${npsCls(st.sv.nps)}">Respondió · ${st.sv.nps}</span>`:st.k==="pendiente"?`<span class="chip">Recibe ${fmt(st.recibe)}</span>`:chipVence(st.abierta?st.dias:-1);
+  // contactos de la vista actual para Zenvia
+  const contactos = f==="por_vencer" ? pvenc : [...rows.map(x=>({cliente:x.v.cliente,telefono:x.v.telefono})), ...((f==="no_respondio"||f==="todos")?pvAbiertas(today).filter(x=>x.tipo==="byd"&&(!soloAbiertas||x.abierta||f==="todos")&&x.cliente&&(!q||[x.cliente,x.vin,x.telefono].some(t=>String(t||"").toLowerCase().includes(q)))):[])];
+  const etiqueta={por_vencer:"por-vencer",no_respondio:"no-respondio",pendiente:"pendientes",respondio:"respondieron",todos:"todos"}[f]||f;
+  const tablaPorVencer=`<section class="card" style="display:grid;gap:10px;border-color:#f3b4ad;background:#fff6f5"><div class="block-h"><h3 style="color:var(--bad)">⏰ Encuestas que vencen en los próximos ${AVISO_PV} días</h3><span class="chip bad">${pvenc.length}</span><span class="sub">La encuesta de posventa vence a los ${VIG_PV} días de activada. Contactá al cliente para recordarle que responda, sin sugerir un puntaje.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Vence</th><th>Cliente</th><th>Celular</th><th>Modelo</th><th>Service</th><th>Activación</th><th>Vencimiento</th><th>Estado</th><th>Recordatorio</th><th></th></tr></thead><tbody>
+    ${pvenc.map(x=>`<tr ${x.tipo==="svc"?`class="click" data-svc="${esc(x.id)}" tabindex="0"`:x.c?.svc?`class="click" data-svc="${esc(x.c.svc._id)}" tabindex="0"`:x.c?.entrega?`class="click" data-open="${esc(x.c.entrega._id)}" tabindex="0"`:""}><td>${chipVence(x.dias)}</td><td>${esc(x.cliente||"No está en la app")}${x.dealer?` ${dealerAlerta({dealer:x.dealer})}`:""}<div class="sub">${esc(x.patente||"")}${x.vin?` · <span class="mono">${esc(x.vin)}</span>`:""}</div></td><td class="mono">${esc(x.telefono||"—")}</td><td>${esc(x.modelo||"")}</td><td>${fmt(x.fechaService)}</td><td>${fmt(x.activacion)}</td><td><b>${fmt(x.vence)}</b></td><td>${x.tipo==="byd"?"Activa en BYD sin responder":"Sin responder"}</td><td>${x.recordatorio?`<span class="chip acc">Avisado ${x.recordatorio.veces>1?x.recordatorio.veces+" veces ":""}· ${fmt(x.recordatorio.fecha)}</span>`:""}</td><td><button class="btn sm" ${x.tipo==="svc"?`data-recsv="${esc(x.id)}"`:`data-recpv="${esc(x.id)}"`} ${S.canWrite?"":"disabled"}>Marcar avisado</button></td></tr>`).join("")||`<tr><td colspan="10" class="empty">No hay encuestas que venzan en los próximos ${AVISO_PV} días.</td></tr>`}
+    </tbody></table></div></section>`;
+  m.innerHTML=`
+  <div class="block-h"><h2>Encuestas BYD ${S.suc?"· "+esc(S.suc):""}</h2>${encToggle()}<span class="sub">La encuesta de posventa se activa a las 72 h de retirar el auto del taller y queda abierta ${VIG_PV} días. Te avisamos ${AVISO_PV} días antes de que venza.</span></div>
+  <div class="kpis">${tab("por_vencer","⏰ Por vencer (próximos "+AVISO_PV+" días)",porVencer(today).length,"bad")}${tab("no_respondio","No respondió (abiertas: "+cnt.abiertas+")",cnt.no_respondio,"warn")}${tab("pendiente","Pendiente (aún no la recibe)",cnt.pendiente,"")}${tab("respondio","Respondió",cnt.respondio,"")}${tab("todos","Todos los services",all.length,"")}<div class="kpi" style="cursor:default"><b>${tasa==null?"—":tasa+"%"}</b><span>Tasa de respuesta</span></div></div>
+  <div class="toolbar"><input type="search" id="encQ" placeholder="Buscar cliente, patente, VIN o teléfono" value="${esc(S.encQ||"")}" aria-label="Buscar">
+    ${f==="por_vencer"?"":`<select id="encPer" aria-label="Período"><option value="" ${!pf?"selected":""}>Todas las fechas</option><option value="mes" ${pf==="mes"?"selected":""}>Por mes</option><option value="dia" ${pf==="dia"?"selected":""}>Por día</option></select>
+    ${pf==="mes"?`<input type="month" id="encMes" value="${esc(pv)}" aria-label="Mes">`:pf==="dia"?`<input type="date" id="encDia" value="${esc(pv)}" aria-label="Día">`:""}`}
+    ${f==="no_respondio"?`<label class="choices"><label><input type="checkbox" id="encAb" ${soloAbiertas?"checked":""}>Solo encuestas abiertas</label></label>`:""}</div>
+  <div class="toolbar"><span class="sub">Descargar:</span><button class="btn sm" id="pvXlsAll" type="button">Excel completo (respondidas, pendientes y vencidas)</button><button class="btn sm" id="pvZen" type="button">CSV para Zenvia · ${contactos.length} de esta vista</button>${S.zenMsg?`<span class="status-line" style="flex-basis:100%">${esc(S.zenMsg)}</span>`:""}</div>
+  ${f==="por_vencer"?tablaPorVencer:`${bloqueActivasPv(q)}
+  <div class="tablewrap"><table><thead><tr><th>Estado</th><th>Cliente</th><th>Patente</th><th>Tipo</th><th>Retiró</th><th>Activación</th><th>Vence</th><th>${f==="respondio"?"Comentario":"Recordatorio"}</th><th></th></tr></thead><tbody>
+  ${rows.slice(0,400).map(({v,st,fe})=>{const r=v.recordatorioEncuesta; const porV=st.k==="no_respondio"&&st.abierta&&st.dias<=AVISO_PV; return `<tr class="click ${porV?"fila-alerta":""}" data-svc="${esc(v._id)}" tabindex="0"><td>${chip(st)}</td><td>${esc(v.cliente||"—")}${esDuplicado(v)?` <span class="chip bad" title="Hay otro egreso del mismo cliente el mismo día">Posible duplicado</span>`:""}<div class="sub">${esc(v.modelo||"")}${v.telefono?` · <span class="mono">${esc(v.telefono)}</span>`:""}</div></td><td class="mono">${esc(v.patente||"")}</td><td>${esc(v.tipo||"")}</td><td>${fmt(v.fechaCierre)}</td><td>${fmt(st.k==="respondio"?(st.sv.activacion||fe):st.recibe)}</td><td>${st.k==="respondio"?"—":fmt(st.cierra||addDays(st.recibe,VIG_PV))}</td><td class="wrap">${st.k==="respondio"?esc(st.sv.comentario||""):r?`<span class="chip acc">Avisado ${r.veces>1?r.veces+" veces":""} · ${fmt(r.fecha)}</span>`:""}</td><td>${st.k==="no_respondio"&&st.abierta?`<button class="btn sm" data-recsv="${esc(v._id)}">Marcar avisado</button>`:""}</td></tr>`;}).join("")||`<tr><td colspan="9" class="empty">No hay services en esta categoría para ese período.</td></tr>`}
+  </tbody></table></div>
+  ${sueltas.length?(()=>{ const byV=new Map([...S.entregas.values()].filter(e=>e.vin).map(e=>[cleanVin(e.vin),e])); const ls=sueltas.map(x=>({x,e:x.vin?byV.get(cleanVin(x.vin)):null})).filter(o=>!q||[o.e?.cliente,o.x.vin,o.e?.telefono].some(t=>String(t||"").toLowerCase().includes(q))).sort((a,b)=>String(b.x.fecha||"").localeCompare(String(a.x.fecha||""))); return `<details class="card" ${S.pvSueltasOpen?"open":""} id="pvSueltas"><summary style="cursor:pointer;font-weight:600">${sueltas.length} respuestas de services anteriores a la app</summary><div class="note" style="margin-top:8px">Son encuestas de posventa de services que no se cargaron en la pestaña Posventa. Cuentan en el NPS de posventa de Reportes. Cuando el VIN es de un 0 km vendido por nosotros, se muestra el cliente y se puede abrir su ficha.</div><div class="tablewrap" style="margin-top:10px"><table><thead><tr><th class="num">NPS</th><th>Cliente</th><th>VIN</th><th>Fecha</th><th>Comentario</th></tr></thead><tbody>${ls.map(({x,e})=>`<tr ${e?`class="click" data-open="${esc(e._id)}" tabindex="0"`:""}><td class="num"><span class="chip ${npsCls(x.nps)}">${x.nps}</span></td><td>${e?esc(e.cliente||"")+`<div class="sub">${esc(e.modelo||"")} · ${esc(e.sucursal||"")}</div>`:x.anonima||!x.vin?`<span class="sub">Anónima</span>`:`<span class="sub">No es cliente 0 km nuestro</span>`}</td><td class="mono">${x.anonima||!x.vin?"—":esc(x.vin)}</td><td>${fmt(x.fecha)}</td><td class="wrap">${esc(x.comentario||"")}</td></tr>`).join("")}</tbody></table></div></details>`; })():""}`}
+  ${importCard()}`;
+  bindEncToggle(m);
+  m.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{S.pvFiltro=b.dataset.pf; S.zenMsg=""; render();});
+  $("#encPer")?.addEventListener("change",ev=>{S.encPer=ev.target.value; render();});
+  $("#encMes")?.addEventListener("change",ev=>{S.encMes=ev.target.value; render();});
+  $("#encDia")?.addEventListener("change",ev=>{S.encDia=ev.target.value; render();});
+  const qi=$("#encQ"); qi.oninput=()=>{S.encQ=qi.value; const pos=qi.selectionStart; render(); const n=$("#encQ"); n.focus(); n.setSelectionRange(pos,pos);};
+  $("#encAb")?.addEventListener("change",ev=>{S.encAbiertas=ev.target.checked; render();});
+  m.querySelectorAll("[data-recsv]").forEach(b=>b.addEventListener("click",async ev=>{ ev.stopPropagation(); const v=S.services.get(b.dataset.recsv); if(!v) return; const data={...v}; delete data._id; const r=v.recordatorioEncuesta||{}; data.recordatorioEncuesta={fecha:todayISO(),veces:(r.veces||0)+1}; if(await saveSvc(v._id,data)){ S.services.set(v._id,{...data,_id:v._id}); toast(`Recordatorio registrado para ${v.cliente||"el cliente"}`); render(); } }));
+  $("#pvSueltas")?.addEventListener("toggle",ev=>{S.pvSueltasOpen=ev.target.open;});
+  bindActivasPv(m);
+  $("#pvXlsAll").onclick=exportPvCompleto;
+  $("#pvZen").onclick=()=>exportZenvia(contactos,etiqueta);
+  bindImport(); bindRows(m);
+}
+
+/* ---- Lista de precios de posventa ---- */
+const SERVICES_N = 8;
+const preciosVig = () => S.precios.get("vigente") || {items:{},desde:"",por:""};
+const famsPrecios = () => [...new Set([...Object.keys(taller().pautaModelo), ...FAMILIAS.map(f=>f[0])])];
+const trabajosPrecio = () => TRABAJOS.filter(t=>t!=="Mantenimiento"&&t!=="Otro");
+const keyPrecio = (tipo,modelo,nServ) => tipo==="Mantenimiento" ? (Number(nServ)>=1 ? `m|${familia(modelo)}|${Math.min(Number(nServ),SERVICES_N)}` : null) : (tipo&&tipo!=="Otro" ? `t|${tipo}` : null);
+function precioLista(tipo,modelo,nServ){ const k=keyPrecio(tipo,modelo,nServ); const v=k?preciosVig().items[k]:null; return v==null||v===""?null:Number(v); }
+const FAM_ALIAS = n => familia(n)!=="Otros" ? familia(n) : null;
+async function importarPrecios(file){
+  try{
+    if(!window.XLSX?.read) throw new Error("no se pudo cargar el lector de Excel");
+    const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+    const hoja=wb.SheetNames.find(n=>/resumen/i.test(n)); if(!hoja) throw new Error("no encuentro la hoja \"Resumen\" del archivo de valores de servicio");
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[hoja],{header:1,defval:null,raw:true});
+    const hi=rows.findIndex(r=>r.some(c=>/^modelo$/i.test(String(c||"").trim()))); if(hi<0) throw new Error("no encuentro los encabezados de la hoja Resumen");
+    const H=rows[hi].map(c=>String(c||"").trim().toLowerCase()), col=rx=>H.findIndex(h=>rx.test(h));
+    const cM=col(/^modelo$/), cS=col(/^servicio$/), cK=col(/kilometraje/), cV=col(/valor \(\$\)/), cF=col(/filtro/);
+    const items={}, km={}; let fam=null, n=0, sinFam=new Set();
+    for(const r of rows.slice(hi+1)){ if(r[cM]) { fam=FAM_ALIAS(String(r[cM])); if(!fam) sinFam.add(String(r[cM])); } const sv=String(r[cS]||""); const m=sv.match(/(\d+)/); if(!fam||!m) continue;
+      const num=Number(m[1]), val=Number(r[cV]); if(Number.isFinite(val)&&val>0){ items[`m|${fam}|${num}`]=Math.round(val); n++; } if(r[cK]) km[`${fam}|${num}`]=String(r[cK]);
+      const fv=Number(r[cF]); if(cF>=0&&Number.isFinite(fv)&&fv>0) items[`f|${fam}`]=Math.round(fv); }
+    if(!n) throw new Error("no encontré valores de service en el archivo");
+    let tc=null, tcFecha=""; const dat=wb.SheetNames.find(x=>/datos/i.test(x)); if(dat){ const dr=XLSX.utils.sheet_to_json(wb.Sheets[dat],{header:1,defval:null,raw:true}); for(const r of dr){ const i=r.findIndex(c=>/^\s*tipo de cambio/i.test(String(c||""))); if(i>=0&&typeof r[i+1]==="number"&&r[i+1]>0&&r[i+1]<100000) tc=r[i+1]; const j=r.findIndex(c=>/fecha del tipo de cambio/i.test(String(c||""))); if(j>=0&&r[j+1]) tcFecha=asISO(r[j+1]); } }
+    const P=preciosVig(), nuevos={...(P.items||{}),...items}, ahora=new Date().toISOString(), por=S.me?.nombre||"", desde=tcFecha||todayISO();
+    await S.db.doc("precios/hist-"+ahora.replace(/[^0-9]/g,"")).set({guardado:ahora,por,desde,antes:P.items||{},despues:nuevos,origen:file.name});
+    const vig={items:nuevos,km:{...(P.km||{}),...km},desde,por,actualizado:ahora,tc,tcFecha,origen:file.name}; await S.db.doc("precios/vigente").set(vig); S.precios.set("vigente",vig);
+    S.prMsg=`Lista importada de "${file.name}": ${n} valores de service${Object.keys(items).filter(k=>k.startsWith("f|")).length?` y ${Object.keys(items).filter(k=>k.startsWith("f|")).length} filtros de habitáculo`:""}${tc?` (tipo de cambio $ ${tc.toLocaleString("es-AR")}${tcFecha?` del ${fmt(tcFecha)}`:""})`:""}.${sinFam.size?` Modelos no reconocidos: ${[...sinFam].join(", ")}.`:""}`;
+    toast("Lista de precios importada"); render();
+  }catch(e){ S.prMsg=""; toast("No se pudo importar: "+(e.message||e)); }
+}
+const puedeEditarPrecios = () => S.isAdmin || S.me?.rol==="servicio";
+function renderPrecios(m){
+  const P=preciosVig(), it=P.items||{}, fams=famsPrecios(), trab=trabajosPrecio(), ed=!!S.preciosEdit&&puedeEditarPrecios();
+  const cell=(k)=>ed?`<input class="precio-in" data-k="${esc(k)}" inputmode="numeric" value="${it[k]!=null?Number(it[k]).toLocaleString("es-AR"):""}" placeholder="—" aria-label="Precio ${esc(k)}">`:`${it[k]!=null?ARS(it[k]):`<span class="sub">—</span>`}`;
+  const hist=[...S.precios.entries()].filter(([k])=>k.startsWith("hist-")).map(([,v])=>v).sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||""))).slice(0,15);
+  m.innerHTML=`
+  ${pvToggle()}
+  <div class="toolbar"><h2 style="margin-right:auto">Lista de precios de services</h2>
+    <span class="sub">${P.desde?`Vigente desde el ${fmt(P.desde)}${P.por?` · actualizó ${esc(P.por)}`:""}`:"Todavía no se cargaron precios"}</span>
+    ${puedeEditarPrecios()?(ed?`<button class="btn" id="prCancel">Cancelar</button><button class="btn pri" id="prSave">Guardar nueva lista</button>`:`<label class="btn" for="prFile">Importar desde Excel</label><input type="file" id="prFile" accept=".xlsx,.xls" hidden><button class="btn pri" id="prEdit">Actualizar precios</button>`):""}</div>
+  ${S.prMsg?`<div class="note" style="color:var(--ok)">${esc(S.prMsg)}</div>`:""}
+  <div class="note">Precios finales en pesos (ARS). Al agendar un turno, la app muestra el precio de lista que corresponde al modelo, tipo de trabajo y N° de service, y se guarda el importe acordado con el cliente. Si después se actualiza la lista, los turnos ya agendados mantienen el precio que se acordó.</div>
+  ${ed?`<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label class="fld">Vigente desde<input type="date" id="prDesde" value="${todayISO()}"></label><span class="sub">Escribí los importes sin puntos ni signos; podés dejar vacío lo que no tenga precio.</span></div>`:""}
+  <section class="block"><h3>Mantenimiento por modelo y N° de service</h3>
+    <div class="tablewrap"><table class="precios"><thead><tr><th>Modelo</th>${Array.from({length:SERVICES_N},(_,i)=>`<th class="num">${i+1}° service</th>`).join("")}<th class="num" title="Reemplazo sugerido, no incluido en el valor del service">Filtro habitáculo (sugerido)</th></tr></thead><tbody>
+    ${fams.map(f=>`<tr><td><b>${esc(f)}</b></td>${Array.from({length:SERVICES_N},(_,i)=>`<td class="num">${cell(`m|${f}|${i+1}`)}${!ed&&(P.km||{})[`${f}|${i+1}`]?`<div class="sub">${esc(P.km[`${f}|${i+1}`])}</div>`:""}</td>`).join("")}<td class="num">${cell(`f|${f}`)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="note">Del 8° service en adelante se toma el precio del 8°. El filtro de aire del habitáculo es un reemplazo sugerido que no está incluido en el valor del service: al agendar se puede sumar.${P.tc?` Valores en pesos calculados con el tipo de cambio de $ ${Number(P.tc).toLocaleString("es-AR")}${P.tcFecha?` del ${fmt(P.tcFecha)}`:""}.`:""}</div></section>
+  <section class="block"><h3>Otros trabajos (mismo precio para todos los modelos)</h3>
+    <div class="tablewrap" style="max-width:560px"><table class="precios"><thead><tr><th>Trabajo</th><th class="num">Precio</th></tr></thead><tbody>
+    ${trab.map(t=>`<tr><td>${esc(t)}</td><td class="num">${cell(`t|${t}`)}</td></tr>`).join("")}
+    <tr><td>Otro</td><td class="num sub">se acuerda en cada turno</td></tr></tbody></table></div></section>
+  ${hist.length?`<details class="card"><summary style="cursor:pointer;font-weight:600">Historial de actualizaciones (${hist.length})</summary><div class="list" style="margin-top:10px">${hist.map(h=>{ const ch=Object.keys({...h.antes,...h.despues}).filter(k=>String(h.antes?.[k]??"")!==String(h.despues?.[k]??"")); return `<div class="row" style="grid-template-columns:150px minmax(0,1fr)"><div class="sub">${h.guardado?new Date(h.guardado).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"}):""}<div style="color:var(--fg);font-weight:600">${esc(h.por||"")}</div></div><div class="meta" style="display:grid;gap:2px">${h.desde?`<div>Vigente desde ${fmt(h.desde)}</div>`:""}${ch.slice(0,20).map(k=>{ const [t,a,b]=k.split("|"); return `<div style="display:block">${esc(t==="m"?`${a} · ${b}° service`:a)}: <s style="color:var(--muted);display:inline">${esc(h.antes?.[k]!=null?ARS(h.antes[k]):"—")}</s> → <strong style="color:var(--fg);display:inline">${esc(h.despues?.[k]!=null?ARS(h.despues[k]):"—")}</strong></div>`; }).join("")}${ch.length>20?`<div>y ${ch.length-20} cambios más</div>`:""}${ch.length?"":"<div>Sin cambios de precios</div>"}</div></div>`; }).join("")}</div></details>`:""}`;
+  m.querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>{S.pvView=b.dataset.pv; S.preciosEdit=false; render();});
+  $("#prEdit")?.addEventListener("click",()=>{S.preciosEdit=true; render();});
+  $("#prFile")?.addEventListener("change",ev=>{ const f=ev.target.files[0]; if(f) importarPrecios(f); ev.target.value=""; });
+  $("#prCancel")?.addEventListener("click",()=>{S.preciosEdit=false; render();});
+  m.querySelectorAll(".precio-in").forEach(i=>i.addEventListener("input",()=>{ const n=parseARS(i.value); const p=i.selectionStart; const before=i.value.length; i.value=n==null?"":n.toLocaleString("es-AR"); try{ const d=i.value.length-before; i.setSelectionRange(p+d,p+d);}catch(e){} }));
+  $("#prSave")?.addEventListener("click",ev=>conBloqueo(ev.target,async()=>{
+    const nuevos={}; m.querySelectorAll(".precio-in").forEach(i=>{ const n=parseARS(i.value); if(n!=null) nuevos[i.dataset.k]=n; });
+    const ahora=new Date().toISOString(), desde=$("#prDesde")?.value||todayISO(), por=S.me?.nombre||"";
+    try{ await S.db.doc("precios/hist-"+ahora.replace(/[^0-9]/g,"")).set({guardado:ahora,por,desde,antes:it,despues:nuevos});
+      const vig={...P,items:nuevos,desde,por,actualizado:ahora}; await S.db.doc("precios/vigente").set(vig);
+      S.precios.set("vigente",vig); S.preciosEdit=false; toast("Lista de precios actualizada"); render(); }
+    catch(e){ toast("No se pudo guardar: "+(e.message||e)); } }));
+}
 
 /* ---- Encuestas ---- */
 let IMPORT=null;
@@ -1333,45 +1526,6 @@ function importCard(){ return `<section class="card" style="display:grid;gap:12p
 function bindImport(){ const fi=$("#fileIn"), drop=$("#drop"); fi.onchange=()=>fi.files[0]&&readFile(fi.files[0]);
   drop.ondragover=ev=>{ev.preventDefault();drop.classList.add("over");}; drop.ondragleave=()=>drop.classList.remove("over");
   drop.ondrop=ev=>{ev.preventDefault();drop.classList.remove("over"); const f2=ev.dataTransfer.files[0]; if(f2) readFile(f2);}; if(IMPORT) renderMapping(); }
-function renderEncuestasPv(m){
-  const today=todayISO(), f=S.pvFiltro||"no_respondio", soloAbiertas=S.encAbiertas!==false, q=(S.encQ||"").toLowerCase();
-  const pf=S.encPer||"", pv=pf==="mes"?(S.encMes||today.slice(0,7)):pf==="dia"?(S.encDia||today):"";
-  const all=visibleSvc().map(v=>{const st=svcEstado(v,today); const fe=st.k==="respondio"&&/^\d{4}-\d{2}-\d{2}$/.test(st.sv.fecha||"")?st.sv.fecha:st.recibe||addDays(v.fechaCierre,3); return {v,st,fe};}).filter(x=>!pf||(pf==="mes"?x.fe.slice(0,7)===pv:x.fe===pv));
-  const cnt={respondio:0,no_respondio:0,abiertas:0,pendiente:0}; all.forEach(x=>{cnt[x.st.k]++; if(x.st.k==="no_respondio"&&x.st.abierta) cnt.abiertas++;});
-  const tasa=cnt.respondio+cnt.no_respondio?Math.round(cnt.respondio*100/(cnt.respondio+cnt.no_respondio)):null;
-  let rows=all.filter(x=>f==="todos"||x.st.k===f); if(f==="no_respondio"&&soloAbiertas) rows=rows.filter(x=>x.st.abierta);
-  if(q) rows=rows.filter(x=>[x.v.cliente,x.v.vin,x.v.patente,x.v.telefono].some(t=>String(t||"").toLowerCase().includes(q)));
-  rows.sort((a,b)=>f==="no_respondio"?(a.st.dias-b.st.dias):b.v.fechaCierre.localeCompare(a.v.fechaCierre));
-  const usadas=new Set(visibleSvc().map(v=>svcSurvey(v)).filter(Boolean)); const sueltas=[...S.encPv.values()].filter(s=>s.nps!=null&&!usadas.has(s)&&(!pf||(pf==="mes"?String(s.fecha||"").slice(0,7)===pv:s.fecha===pv)));
-  const tab=(k,l,n,cls)=>`<button class="kpi ${cls}" data-pf="${k}" style="${f===k?"border-color:var(--accent);background:var(--accent-soft)":""}"><b>${n}</b><span>${l}</span></button>`;
-  const chip=st=>st.k==="respondio"?`<span class="chip ${npsCls(st.sv.nps)}">Respondió · ${st.sv.nps}</span>`:st.k==="pendiente"?`<span class="chip">Recibe ${fmt(st.recibe)}</span>`:st.abierta?`<span class="chip warn">No respondió · cierra en ${st.dias} días</span>`:`<span class="chip bad">No respondió · vencida</span>`;
-  m.innerHTML=`
-  <div class="block-h"><h2>Encuestas BYD ${S.suc?"· "+esc(S.suc):""}</h2>${encToggle()}<span class="sub">La encuesta de posventa le llega al cliente a las 72 h de retirar el auto del taller. Calculamos que queda abierta 60 días.</span></div>
-  <div class="kpis">${tab("no_respondio","No respondió (abiertas: "+cnt.abiertas+")",cnt.no_respondio,"warn")}${tab("pendiente","Pendiente (aún no la recibe)",cnt.pendiente,"")}${tab("respondio","Respondió",cnt.respondio,"")}${tab("todos","Todos los services",all.length,"")}<div class="kpi" style="cursor:default"><b>${tasa==null?"—":tasa+"%"}</b><span>Tasa de respuesta</span></div></div>
-  <div class="toolbar"><input type="search" id="encQ" placeholder="Buscar cliente, patente, VIN o teléfono" value="${esc(S.encQ||"")}" aria-label="Buscar">
-    <button class="btn sm" id="pvXls" type="button">Exportar a Excel (${rows.length})</button>
-    <select id="encPer" aria-label="Período"><option value="" ${!pf?"selected":""}>Todas las fechas</option><option value="mes" ${pf==="mes"?"selected":""}>Por mes</option><option value="dia" ${pf==="dia"?"selected":""}>Por día</option></select>
-    ${pf==="mes"?`<input type="month" id="encMes" value="${esc(pv)}" aria-label="Mes">`:pf==="dia"?`<input type="date" id="encDia" value="${esc(pv)}" aria-label="Día">`:""}
-    ${f==="no_respondio"?`<label class="choices"><label><input type="checkbox" id="encAb" ${soloAbiertas?"checked":""}>Solo encuestas abiertas</label></label>`:""}</div>
-  ${bloqueActivasPv(q)}
-  <div class="tablewrap"><table><thead><tr><th>Estado</th><th>Cliente</th><th>Patente</th><th>Tipo</th><th>Retiró</th><th>Fecha encuesta</th><th>${f==="respondio"?"Comentario":"Recordatorio"}</th><th></th></tr></thead><tbody>
-  ${rows.slice(0,400).map(({v,st,fe})=>{const r=v.recordatorioEncuesta; return `<tr class="click" data-svc="${esc(v._id)}" tabindex="0"><td>${chip(st)}</td><td>${esc(v.cliente||"—")}${esDuplicado(v)?` <span class="chip bad" title="Hay otro egreso del mismo cliente el mismo día">Posible duplicado</span>`:""}<div class="sub">${esc(v.modelo||"")}${v.telefono?` · <span class="mono">${esc(v.telefono)}</span>`:""}</div></td><td class="mono">${esc(v.patente||"")}</td><td>${esc(v.tipo||"")}</td><td>${fmt(v.fechaCierre)}</td><td>${fmt(fe)}</td><td class="wrap">${st.k==="respondio"?esc(st.sv.comentario||""):r?`<span class="chip acc">Avisado ${r.veces>1?r.veces+" veces":""} · ${fmt(r.fecha)}</span>`:""}</td><td>${st.k==="no_respondio"&&st.abierta?`<button class="btn sm" data-recsv="${esc(v._id)}">Marcar avisado</button>`:""}</td></tr>`;}).join("")||`<tr><td colspan="8" class="empty">No hay services en esta categoría para ese período.</td></tr>`}
-  </tbody></table></div>
-  ${sueltas.length?(()=>{ const byV=new Map([...S.entregas.values()].filter(e=>e.vin).map(e=>[cleanVin(e.vin),e])); const ls=sueltas.map(x=>({x,e:x.vin?byV.get(cleanVin(x.vin)):null})).filter(o=>!q||[o.e?.cliente,o.x.vin,o.e?.telefono].some(t=>String(t||"").toLowerCase().includes(q))).sort((a,b)=>String(b.x.fecha||"").localeCompare(String(a.x.fecha||""))); return `<details class="card" ${S.pvSueltasOpen?"open":""} id="pvSueltas"><summary style="cursor:pointer;font-weight:600">${sueltas.length} respuestas de services anteriores a la app</summary><div class="note" style="margin-top:8px">Son encuestas de posventa de services que no se cargaron en la pestaña Service. Cuentan en el NPS de posventa de Reportes. Cuando el VIN es de un 0 km vendido por nosotros, se muestra el cliente y se puede abrir su ficha.</div><div class="tablewrap" style="margin-top:10px"><table><thead><tr><th class="num">NPS</th><th>Cliente</th><th>VIN</th><th>Fecha</th><th>Comentario</th></tr></thead><tbody>${ls.map(({x,e})=>`<tr ${e?`class="click" data-open="${esc(e._id)}" tabindex="0"`:""}><td class="num"><span class="chip ${npsCls(x.nps)}">${x.nps}</span></td><td>${e?esc(e.cliente||"")+`<div class="sub">${esc(e.modelo||"")} · ${esc(e.sucursal||"")}</div>`:x.anonima||!x.vin?`<span class="sub">Anónima</span>`:`<span class="sub">No es cliente 0 km nuestro</span>`}</td><td class="mono">${x.anonima||!x.vin?"—":esc(x.vin)}</td><td>${fmt(x.fecha)}</td><td class="wrap">${esc(x.comentario||"")}</td></tr>`).join("")}</tbody></table></div></details>`; })():""}
-  ${importCard()}`;
-  bindEncToggle(m);
-  m.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{S.pvFiltro=b.dataset.pf; render();});
-  $("#encPer").onchange=ev=>{S.encPer=ev.target.value; render();};
-  $("#encMes")?.addEventListener("change",ev=>{S.encMes=ev.target.value; render();});
-  $("#encDia")?.addEventListener("change",ev=>{S.encDia=ev.target.value; render();});
-  const qi=$("#encQ"); qi.oninput=()=>{S.encQ=qi.value; const pos=qi.selectionStart; render(); const n=$("#encQ"); n.focus(); n.setSelectionRange(pos,pos);};
-  $("#encAb")?.addEventListener("change",ev=>{S.encAbiertas=ev.target.checked; render();});
-  m.querySelectorAll("[data-recsv]").forEach(b=>b.addEventListener("click",async ev=>{ ev.stopPropagation(); const v=S.services.get(b.dataset.recsv); if(!v) return; const data={...v}; delete data._id; const r=v.recordatorioEncuesta||{}; data.recordatorioEncuesta={fecha:todayISO(),veces:(r.veces||0)+1}; if(await saveSvc(v._id,data)) toast(`Recordatorio registrado para ${v.cliente||"el cliente"}`); }));
-  $("#pvSueltas")?.addEventListener("toggle",ev=>{S.pvSueltasOpen=ev.target.open;});
-  bindActivasPv(m);
-  $("#pvXls").onclick=()=>exportPvXls(rows,sueltas,f,q);
-  bindImport(); bindRows(m);
-}
 function renderEncuestas(m){
   if(S.encTipo==="pv") return renderEncuestasPv(m);
   const today=todayISO(), f=S.encFiltro||"no_respondio", soloAbiertas=S.encAbiertas!==false, q=(S.encQ||"").toLowerCase();
